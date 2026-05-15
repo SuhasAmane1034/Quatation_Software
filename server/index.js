@@ -352,13 +352,16 @@ app.post(
   authMiddleware,
   asyncHandler(async (req, res) => {
     const id = uuidv4();
-    const countRes = await db.execute('SELECT COUNT(*) as c FROM quotations');
-    const count = Number(countRes.rows[0]?.c ?? 0);
-    const quote_number = `QT-${String(count + 1).padStart(4, '0')}`;
+
+    // Generate unique quotation number
+    const quote_number = `QT-${uuidv4().slice(0, 8).toUpperCase()}`;
+
     const q = req.body;
+
     const logoRow = await db.execute({
       sql: "SELECT value FROM settings WHERE key='company_logo'",
     });
+
     const logo = q.company_logo || logoRow.rows[0]?.value || '';
 
     const stmts = [
@@ -385,6 +388,7 @@ app.post(
         ],
       },
     ];
+
     if (q.items?.length) {
       q.items.forEach((item, i) => {
         stmts.push({
@@ -411,7 +415,9 @@ app.post(
         });
       });
     }
+
     await db.batch(stmts, 'write');
+
     res.json({ id, quote_number });
   })
 );
