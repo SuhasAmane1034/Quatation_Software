@@ -71,7 +71,6 @@ function InlineProductForm({ draft, onDraftChange, onSaved, onCancel, addToast }
     setSaving(false);
   };
 
-  // MODIFIED: use correct CSS vars (--bg-card, --bg-input, --border, --text-primary, --text-muted)
   const inputStyle = {
     width: '100%', padding: '7px 10px', borderRadius: 7,
     border: '1.5px solid var(--border)',
@@ -90,7 +89,6 @@ function InlineProductForm({ draft, onDraftChange, onSaved, onCancel, addToast }
       animation: 'slideDown 0.22s cubic-bezier(.4,0,.2,1)',
       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
     }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 18 }}>✨</span>
@@ -124,7 +122,6 @@ function InlineProductForm({ draft, onDraftChange, onSaved, onCancel, addToast }
         </div>
       </div>
 
-      {/* Image Upload — ADDED: improved with drag feel */}
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Product Image</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -154,7 +151,6 @@ function InlineProductForm({ draft, onDraftChange, onSaved, onCancel, addToast }
         </div>
       </div>
 
-      {/* Action buttons */}
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={handleSave} disabled={saving}
           style={{ flex: 1, background: 'linear-gradient(135deg,var(--accent),var(--accent-dark))', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontWeight: 700, fontSize: 13, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: '0 4px 12px var(--accent-glow)' }}>
@@ -201,7 +197,6 @@ const ProductCell = React.memo(function ProductCell({ value, onChange, onSelect,
         setResults(res.data);
         setIdx(0);
       } catch {
-        // Keep dropdown open so user can still create product inline.
         setResults([]);
       }
       setLoading(false);
@@ -212,31 +207,58 @@ const ProductCell = React.memo(function ProductCell({ value, onChange, onSelect,
   const pick = (p) => { setQuery(p.name); setOpen(false); onSelect(p); };
 
   const handleKey = (e) => {
-    if (open) {
-      if (e.key === 'ArrowDown' && results.length > 0)  { e.preventDefault(); setIdx(i => (i + 1) % results.length); return; }
-      if (e.key === 'ArrowUp' && results.length > 0)    { e.preventDefault(); setIdx(i => (i - 1 + results.length) % results.length); return; }
-      if (e.key === 'Enter' && results[idx]) { e.preventDefault(); pick(results[idx]); return; }
-      if (e.key === 'Escape') { setOpen(false); return; }
+    if (open && results.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setIdx(i => (i + 1) % results.length);
+        return;
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setIdx(i => (i - 1 + results.length) % results.length);
+        return;
+      }
+
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        const selected = results[idx];
+        if (selected) {
+          pick(selected);
+          setTimeout(() => {
+            onKeyDown?.({
+              key: 'Enter',
+              preventDefault: () => {}
+            });
+          }, 50);
+        }
+        return;
+      }
     }
+
+    if (e.key === 'Escape') {
+      setOpen(false);
+      return;
+    }
+
     onKeyDown?.(e);
   };
 
-  // MODIFIED: show dropdown when we have results OR have typed something (for the create option)
   const showDropdown = open && query.length >= 1;
 
   return (
     <div style={{ position: 'relative' }}>
       <div className="autocomplete-wrapper">
         <div className="product-cell-controls">
-        <input className="grid-input product-search-input" value={query}
-          onChange={e => { setQuery(e.target.value); onChange(e.target.value); }}
-          onFocus={() => {
-            setIsFocused(true);
-            if (query.length >= 1) setOpen(true);
-          }}
-          onKeyDown={handleKey}
-          onBlur={() => setTimeout(() => { setOpen(false); setIsFocused(false); }, 200)}
-          placeholder="Search product…" autoComplete="off" />
+          <input className="grid-input product-search-input" value={query}
+            onChange={e => { setQuery(e.target.value); onChange(e.target.value); }}
+            onFocus={() => {
+              setIsFocused(true);
+              if (query.length >= 1) setOpen(true);
+            }}
+            onKeyDown={handleKey}
+            onBlur={() => setTimeout(() => { setOpen(false); setIsFocused(false); }, 200)}
+            placeholder="Search product…" autoComplete="off" />
           <button
             type="button"
             className="btn btn-secondary btn-sm product-create-btn"
@@ -253,7 +275,6 @@ const ProductCell = React.memo(function ProductCell({ value, onChange, onSelect,
         {loading && (
           <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-muted)' }}>⏳</div>
         )}
-        {/* MODIFIED: show dropdown when typing (for results + create option) */}
         {showDropdown && (
           <div className="autocomplete-dropdown product-dropdown">
             {results.length > 0 ? (
@@ -278,14 +299,12 @@ const ProductCell = React.memo(function ProductCell({ value, onChange, onSelect,
                 </div>
               ))
             ) : (
-              /* ADDED: No results message */
               !loading && (
                 <div style={{ padding: '10px 12px', fontSize: 12.5, color: 'var(--text-muted)', textAlign: 'center' }}>
                   No products found for "<strong style={{ color: 'var(--text)' }}>{query}</strong>"
                 </div>
               )
             )}
-            {/* MODIFIED: Sticky Create option — always shown when typing */}
             <div className="autocomplete-item create-item"
               onMouseDown={() => { setOpen(false); onInlineToggle(query); }}>
               <div style={{ width: 42, height: 42, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>✨</div>
@@ -305,6 +324,44 @@ const ProductCell = React.memo(function ProductCell({ value, onChange, onSelect,
 const ShortcutCell = React.memo(function ShortcutCell({ value, options = [], onChange, onKeyDown, placeholder }) {
   const [input, setInput] = useState(value || '');
   const [open, setOpen]   = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  
+  const handleShortcutKey = (e) => {
+    const filtered = options.filter(o =>
+      o.value.toLowerCase().includes(input.toLowerCase()) ||
+      o.key.toLowerCase().includes(input.toLowerCase())
+    );
+    
+    if (open && filtered.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(i => Math.min(i + 1, filtered.length - 1));
+        return;
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(i => Math.max(i - 1, 0));
+        return;
+      }
+
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        if (filtered[selectedIndex]) {
+          pick(filtered[selectedIndex].value);
+        }
+        setTimeout(() => {
+          onKeyDown?.({
+            key: 'Enter',
+            preventDefault: () => {}
+          });
+        }, 50);
+        return;
+      }
+    }
+    onKeyDown?.(e);
+  };
+  
   useEffect(() => { setInput(value || ''); }, [value]);
 
   const resolve = (raw) => {
@@ -326,13 +383,13 @@ const ShortcutCell = React.memo(function ShortcutCell({ value, options = [], onC
         onChange={e => { setInput(e.target.value); setOpen(true); }}
         onBlur={() => setTimeout(() => { const r = resolve(input); setInput(r); onChange(r); setOpen(false); }, 180)}
         onFocus={() => setOpen(true)}
-        onKeyDown={onKeyDown}
+        onKeyDown={handleShortcutKey}
         placeholder={placeholder}
         style={{ minWidth: 70 }} />
       {open && filtered.length > 0 && (
         <div className="autocomplete-dropdown" style={{ minWidth: 150 }}>
-          {filtered.map(o => (
-            <div key={o.key} className="autocomplete-item" onMouseDown={() => pick(o.value)}>
+          {filtered.map((o, idx) => (
+            <div key={o.key} className={`autocomplete-item ${idx === selectedIndex ? 'selected' : ''}`} onMouseDown={() => pick(o.value)}>
               <span className="tag" style={{ fontSize:10, minWidth:30, justifyContent:'center', fontFamily:'monospace' }}>{o.key}</span>
               <span className="autocomplete-item-name">{o.value}</span>
             </div>
@@ -379,7 +436,7 @@ export default function QuotationBuilder() {
   const [overallDiscount, setOverallDiscount] = useState(0);
   const [applyTax, setApplyTax]         = useState(false);
   const [quoteNumber, setQuoteNumber]   = useState('');
-  const [inlineRowIdx, setInlineRowIdx] = useState(null); // which row has inline form open
+  const [inlineRowIdx, setInlineRowIdx] = useState(null);
   const [salespersons, setSalespersons] = useState([]);
   const [showAddress, setShowAddress] = useState(false);
 
@@ -480,6 +537,9 @@ export default function QuotationBuilder() {
       next[i] = { ...next[i], product_id: p.id, product_name: p.name, rate: p.rate, unit: p.unit || 'Pcs', product_image: p.image || '', quantity: qty };
       next[i].amount = qty * p.rate * (1 - (Number(next[i].discount) || 0) / 100);
       if (i === next.length - 1) next.push(emptyRow());
+      setTimeout(() => {
+        document.querySelector(`[data-row="${i + 1}"][data-field="product_name"] input`)?.focus();
+      }, 0);
       pushTotals(next, overallDiscount, applyTax);
       return next;
     });
@@ -496,59 +556,130 @@ export default function QuotationBuilder() {
     });
   };
 
-  useEffect(() => { pushTotals(rows, overallDiscount, applyTax); }, [overallDiscount, applyTax]);
+  useEffect(() => { pushTotals(rows, overallDiscount, applyTax); }, [overallDiscount, applyTax, rows, pushTotals]);
 
   useEffect(() => {
     const onKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
         handleSave();
+        return;
       }
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
         e.preventDefault();
-        setRows((prev) => [...prev, emptyRow()]);
+        setRows(prev => [...prev, emptyRow()]);
         setTimeout(() => {
           document.querySelector(`[data-row="${rows.length}"][data-field="product_name"] input`)?.focus();
-        }, 0);
+        }, 100);
+        return;
+      }
+
+      if (e.key === 'F2') {
+        e.preventDefault();
+        const active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+          active.focus();
+          active.select();
+        }
+        return;
       }
     };
+
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
   }, [rows.length]);
 
+  const show = (k) => settings?.columns_visible?.[k] !== false;
+  const currency = settings?.currency || '₹';
+  const taxRate = Number(header.tax_rate || settings?.tax_rate || 18);
+  const halfTax = (Number(header.tax) || 0) / 2;
+  const shapes = settings?.shapes || [];
+  const colors = settings?.colors || [];
+  const bodyColors = settings?.body_colors || [];
+  const warranties = settings?.warranties || [];
+  const units = settings?.units || [];
+
   const handleKeyNav = (e, rowIdx, field) => {
-    const fields = ['product_name','shape','color','body_color','warranty','quantity','unit','rate','discount'];
+    const allFields = [
+      'product_name',
+      'shape',
+      'color',
+      'body_color',
+      'warranty',
+      'quantity',
+      'unit',
+      'rate',
+      'discount'
+    ];
+
+    const fields = allFields.filter(f => {
+      if (f === 'product_name') return true;
+      if (f === 'quantity') return true;
+      if (f === 'rate') return true;
+      return show(f);
+    });
+
     const fi = fields.indexOf(field);
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      document.querySelector(`[data-row="${rowIdx}"][data-field="${fields[Math.min(fi + 1, fields.length - 1)]}"] input, [data-row="${rowIdx}"][data-field="${fields[Math.min(fi + 1, fields.length - 1)]}"] select`)?.focus();
-      return;
-    }
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      document.querySelector(`[data-row="${rowIdx}"][data-field="${fields[Math.max(fi - 1, 0)]}"] input, [data-row="${rowIdx}"][data-field="${fields[Math.max(fi - 1, 0)]}"] select`)?.focus();
-      return;
-    }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      document.querySelector(`[data-row="${rowIdx + 1}"][data-field="${field}"] input, [data-row="${rowIdx + 1}"][data-field="${field}"] select`)?.focus();
-      return;
-    }
+
+    const moveToField = (row, fieldName) => {
+      setTimeout(() => {
+        document.querySelector(
+          `[data-row="${row}"][data-field="${fieldName}"] input,
+           [data-row="${row}"][data-field="${fieldName}"] select`
+        )?.focus();
+      }, 0);
+    };
+
     if (e.key === 'ArrowUp') {
       e.preventDefault();
-      document.querySelector(`[data-row="${Math.max(rowIdx - 1, 0)}"][data-field="${field}"] input, [data-row="${Math.max(rowIdx - 1, 0)}"][data-field="${field}"] select`)?.focus();
+      moveToField(Math.max(0, rowIdx - 1), field);
       return;
     }
-    if (e.key !== 'Enter' && e.key !== 'Tab') return;
-    e.preventDefault();
-    if (e.key === 'Tab') {
-      document.querySelector(`[data-row="${rowIdx + 1}"][data-field="product_name"] input`)?.focus();
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      moveToField(rowIdx + 1, field);
       return;
     }
-    if (fi < fields.length - 1) {
-      document.querySelector(`[data-row="${rowIdx}"][data-field="${fields[fi+1]}"] input, [data-row="${rowIdx}"][data-field="${fields[fi+1]}"] select`)?.focus();
-    } else {
-      document.querySelector(`[data-row="${rowIdx+1}"][data-field="product_name"] input`)?.focus();
+
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (fi > 0) {
+        moveToField(rowIdx, fields[fi - 1]);
+      } else {
+        moveToField(Math.max(0, rowIdx - 1), fields[fields.length - 1]);
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (fi < fields.length - 1) {
+        moveToField(rowIdx, fields[fi + 1]);
+      } else {
+        moveToField(rowIdx + 1, fields[0]);
+      }
+      return;
+    }
+
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      const direction = e.shiftKey ? -1 : 1;
+      let nextIndex = fi + direction;
+      let nextRow = rowIdx;
+
+      if (nextIndex >= fields.length) {
+        nextIndex = 0;
+        nextRow++;
+      }
+      if (nextIndex < 0) {
+        nextIndex = fields.length - 1;
+        nextRow = Math.max(0, rowIdx - 1);
+      }
+      moveToField(nextRow, fields[nextIndex]);
     }
   };
 
@@ -574,22 +705,13 @@ export default function QuotationBuilder() {
     setSaving(false);
   };
 
-  const shapes     = settings?.shapes      || [];
-  const colors     = settings?.colors      || [];
-  const bodyColors = settings?.body_colors || [];
-  const warranties = settings?.warranties  || [];
-  const currency   = settings?.currency    || '₹';
-  const colVis     = settings?.columns_visible || {};
-  const taxRate    = Number(header.tax_rate || settings?.tax_rate || 18);
-  const validRows  = rows.filter(r => r.product_name && r.quantity && r.rate);
+  const validRows = rows.filter(r => r.product_name && r.quantity && r.rate);
   const totalSaved = validRows.reduce((sum, row) => {
     const qty = Number(row.quantity) || 0;
     const rate = Number(row.rate) || 0;
     const disc = Math.min(Number(row.discount) || 0, 100);
     return sum + (qty * rate * (disc / 100));
   }, 0);
-  const halfTax = (Number(header.tax) || 0) / 2;
-  const show = (k) => colVis[k] !== false;
 
   const validTill = header.date && header.validity_days
     ? new Date(new Date(header.date).getTime() + Number(header.validity_days) * 86400000)
@@ -759,21 +881,19 @@ export default function QuotationBuilder() {
               </thead>
               <tbody>
                 {rows.map((row, i) => {
-                  const isEmpty = !row.product_name && !row.quantity && !row.rate;
                   const showForm = inlineRowIdx === i;
-                  const totalCols =
-                    (show('sr_no') ? 1 : 0) + (show('product_image') ? 1 : 0) +
-                    1 + (show('shape') ? 1 : 0) + (show('color') ? 1 : 0) +
-                    (show('body_color') ? 1 : 0) + (show('warranty') ? 1 : 0) +
-                    1 + (show('unit') ? 1 : 0) + 1 + (show('discount') ? 1 : 0) + 1 + 1;
+                  const totalCols = (show('sr_no') ? 1 : 0) + (show('product_image') ? 1 : 0) + 1 +
+                    (show('shape') ? 1 : 0) + (show('color') ? 1 : 0) + (show('body_color') ? 1 : 0) +
+                    (show('warranty') ? 1 : 0) + 1 + (show('unit') ? 1 : 0) + 1 +
+                    (show('discount') && showDiscount ? 1 : 0) + 1 + 1;
 
                   return (
                     <React.Fragment key={row._id}>
-                      <tr className={isEmpty ? 'empty-row' : ''}>
+                      <tr>
                         {show('sr_no') && (
                           <td className="ctr">
                             <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600 }}>{i + 1}</span>
-                          </td>
+                           </td>
                         )}
                         {show('product_image') && (
                           <td className="qt-img-cell">
@@ -781,7 +901,7 @@ export default function QuotationBuilder() {
                               ? <img src={resolveImageUrl(row.product_image)} alt="" />
                               : <div className="img-placeholder">💡</div>
                             }
-                          </td>
+                           </td>
                         )}
                         <td className="product-name-cell" data-row={i} data-field="product_name">
                           <ProductCell
@@ -798,40 +918,40 @@ export default function QuotationBuilder() {
                               setInlineRowIdx(showForm ? null : i);
                             }}
                           />
-                        </td>
+                         </td>
                         {show('shape') && (
                           <td data-row={i} data-field="shape">
                             <ShortcutCell value={row.shape} options={shapes}
                               onChange={v => updateRow(i, 'shape', v)}
                               onKeyDown={e => handleKeyNav(e, i, 'shape')} placeholder="R/S…" />
-                          </td>
+                           </td>
                         )}
                         {show('color') && (
                           <td data-row={i} data-field="color">
                             <ShortcutCell value={row.color} options={colors}
                               onChange={v => updateRow(i, 'color', v)}
                               onKeyDown={e => handleKeyNav(e, i, 'color')} placeholder="W/NW…" />
-                          </td>
+                           </td>
                         )}
                         {show('body_color') && (
                           <td data-row={i} data-field="body_color">
                             <ShortcutCell value={row.body_color} options={bodyColors}
                               onChange={v => updateRow(i, 'body_color', v)}
                               onKeyDown={e => handleKeyNav(e, i, 'body_color')} placeholder="B/W…" />
-                          </td>
+                           </td>
                         )}
                         {show('warranty') && (
                           <td data-row={i} data-field="warranty">
                             <ShortcutCell value={row.warranty} options={warranties}
                               onChange={v => updateRow(i, 'warranty', v)}
                               onKeyDown={e => handleKeyNav(e, i, 'warranty')} placeholder="1/NW…" />
-                          </td>
+                           </td>
                         )}
                         <td data-row={i} data-field="quantity">
                           <input className="grid-input num-input" type="number" value={row.quantity} min="0"
                             onChange={e => updateRow(i, 'quantity', e.target.value)}
                             onKeyDown={e => handleKeyNav(e, i, 'quantity')} />
-                        </td>
+                         </td>
                         {show('unit') && (
                           <td data-row={i} data-field="unit">
                             <select
@@ -840,40 +960,47 @@ export default function QuotationBuilder() {
                               onChange={e => updateRow(i, 'unit', e.target.value)}
                               onKeyDown={e => handleKeyNav(e, i, 'unit')}
                             >
-                              <option value="Pcs">Pcs</option>
-                              <option value="Meter">Meter</option>
-                              <option value="Set">Set</option>
-                              <option value="Box">Box</option>
-                              <option value="Kg">Kg</option>
-                              <option value="Reel">Reel</option>
+                              {units.length > 0 ? (
+                                units.map(u => (
+                                  <option key={u.value} value={u.value}>{u.value}</option>
+                                ))
+                              ) : (
+                                <>
+                                  <option value="Pcs">Pcs</option>
+                                  <option value="Meter">Meter</option>
+                                  <option value="Set">Set</option>
+                                  <option value="Box">Box</option>
+                                  <option value="Kg">Kg</option>
+                                  <option value="Reel">Reel</option>
+                                </>
+                              )}
                             </select>
-                          </td>
+                           </td>
                         )}
                         <td data-row={i} data-field="rate">
                           <input className="grid-input num-input" type="number" value={row.rate} min="0"
                             onChange={e => updateRow(i, 'rate', e.target.value)}
                             onKeyDown={e => handleKeyNav(e, i, 'rate')} />
-                        </td>
+                         </td>
                         {show('discount') && showDiscount && (
                           <td data-row={i} data-field="discount">
                             <input className="grid-input num-input" type="number" value={row.discount} min="0" max="100"
                               onChange={e => updateRow(i, 'discount', e.target.value)}
                               onKeyDown={e => handleKeyNav(e, i, 'discount')} />
-                          </td>
+                           </td>
                         )}
                         <td className="qt-amt-cell">
                           <Amt value={row.amount} currency={currency} />
-                        </td>
+                         </td>
                         <td className="ctr">
                           <button className="btn btn-ghost btn-icon"
                             style={{ color:'var(--danger)', opacity: rows.length === 1 ? 0.25 : 0.7, padding:'5px' }}
                             onClick={() => deleteRow(i)} disabled={rows.length === 1}>
                             <Trash2 size={13} />
                           </button>
-                        </td>
+                         </td>
                       </tr>
 
-                      {/* Inline product creation form row — MODIFIED: uses class for clean styling */}
                       {showForm && (
                         <tr className="inline-form-row">
                           <td colSpan={totalCols}>
@@ -896,7 +1023,7 @@ export default function QuotationBuilder() {
                                 }}
                               />
                             </div>
-                          </td>
+                           </td>
                         </tr>
                       )}
                     </React.Fragment>
@@ -927,7 +1054,6 @@ export default function QuotationBuilder() {
           </div>
         </div>
 
-        {/* ── NOTES + TOTALS ── */}
         <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:14, alignItems:'start' }}>
           <div className="card">
             <div className="card-header"><span className="card-title">Notes & Terms</span></div>

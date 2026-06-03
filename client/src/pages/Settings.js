@@ -68,6 +68,7 @@ export default function Settings() {
   const [colors, setColors] = useState([]);
   const [bodyColors, setBodyColors] = useState([]);
   const [warranties, setWarranties] = useState([]);
+  const [units, setUnits] = useState([]);
   const [colVis, setColVis] = useState({});
   const [uploading, setUploading] = useState(false);
   const [salespersons, setSalespersons] = useState([]);
@@ -94,6 +95,7 @@ export default function Settings() {
       setColors(Array.isArray(settings.colors) ? settings.colors : []);
       setBodyColors(Array.isArray(settings.body_colors) ? settings.body_colors : []);
       setWarranties(Array.isArray(settings.warranties) ? settings.warranties : []);
+      setUnits(Array.isArray(settings.units) ? settings.units : []);
       const cv = settings.columns_visible && typeof settings.columns_visible === 'object' ? settings.columns_visible : {};
       const defaults = {};
       ALL_COLUMNS.forEach(c => { defaults[c.key] = cv[c.key] !== false; });
@@ -119,7 +121,7 @@ export default function Settings() {
   };
 
   const handleSave = () => {
-    updateSettings({ ...form, shapes, colors, body_colors: bodyColors, warranties, columns_visible: colVis });
+    updateSettings({ ...form, shapes, colors, body_colors: bodyColors, warranties, units, columns_visible: colVis });
   };
 
   const f = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -294,7 +296,19 @@ export default function Settings() {
                 <div className="form-group">
                   <label>Default Unit</label>
                   <select value={form.default_unit || 'Pcs'} onChange={e => f('default_unit', e.target.value)}>
-                    <option>Pcs</option><option>Meter</option><option>Reel</option><option>Set</option><option>Box</option>
+                    {units.length > 0 ? (
+                      units.map(u => (
+                        <option key={u.value} value={u.value}>{u.value}</option>
+                      ))
+                    ) : (
+                      <>
+                        <option>Pcs</option>
+                        <option>Meter</option>
+                        <option>Reel</option>
+                        <option>Set</option>
+                        <option>Box</option>
+                      </>
+                    )}
                   </select>
                 </div>
                 <div className="form-group">
@@ -437,6 +451,7 @@ export default function Settings() {
             <ShortcutEditor title="🟡 Color" items={colors} onChange={setColors} />
             <ShortcutEditor title="⚫ Body Color" items={bodyColors} onChange={setBodyColors} />
             <ShortcutEditor title="🛡️ Warranty" items={warranties} onChange={setWarranties} />
+            <ShortcutEditor title="📏 Unit" items={units} onChange={setUnits} />
           </div>
         </div>
 
